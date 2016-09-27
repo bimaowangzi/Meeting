@@ -1,0 +1,28 @@
+{% extends "bootstrap/base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "bootstrap/fixes.html" as fixes %}
+{% import "bootstrap/utils.html" as util %}
+
+{% block content %}
+
+{{nav.top.render()}}
+<div class="container">
+	<head>
+		<link rel="stylesheet" href='/static/style.css' />
+	</head>
+
+	<body>
+
+	<h1>TableTopWeb - Utilities for the Boardgamer!</h1>
+
+    <hr>
+
+	</body>
+</div>
+
+{% endblock %}
+
+{% block head %}
+{{super()}}
+{{fixes.ie8()}}
+{% endblock %}
