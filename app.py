@@ -4,6 +4,7 @@
 
 from flask import Flask, render_template, url_for
 from flask_bootstrap import Bootstrap
+import sqlite3 as lite
 
 
 app = Flask(__name__)
@@ -35,7 +36,23 @@ def api_person(p_id):
     #TODO: GET - show details of specific person. POST - create new person. PUT - edit person details. DELETE - delete person.
     return 'You are at person ' + p_id
 
+def refresh_sqlite_database():
+
+    con = lite.connect('test.db')
+
+    with con:
+        cur = con.cursor()
+        cur.execute("DROP TABLE IF EXISTS Person")
+        cur.execute("DROP TABLE IF EXISTS Meeting")
+        cur.execute("DROP TABLE IF EXISTS Schedules")
+        cur.execute('CREATE TABLE Person(p_id INT, name TEXT, timetable TEXT)')
+        cur.execute('CREATE TABLE Meeting(m_id INT, start_time TEXT, end_time TEXT, location TEXT)')
+        cur.execute('CREATE TABLE Schedules(m_id INT, p_id INT)')
+
+
+
 if __name__ == '__main__':
+    refresh_sqlite_database()
     Bootstrap(app)
     app.secret_key = 'devkey'
     app.config['SESSION_TYPE'] = 'filesystem'
