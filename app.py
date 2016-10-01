@@ -9,6 +9,9 @@ import sqlite3 as lite
 
 app = Flask(__name__)
 
+#TODO: add user authentication for something
+
+#RESTful flask tutorial: http://blog.luisrei.com/articles/flaskrest.html
 @app.route('/')
 def api_root():
     #TODO: not sure if you want to show lists of everything here. if not we can just leave this.
@@ -63,6 +66,8 @@ def refresh_sqlite_database(db):
 
 
 def insert_sample_data(db):
+    #inserts some sample database into the database.
+    #takes in database name (db).
     con = lite.connect(db)
     with con:
         curs = con.cursor()
@@ -88,6 +93,8 @@ def insert_sample_data(db):
         curs.executemany("INSERT INTO Schedules VALUES(?, ?)", schedules)
 
 def get_state_of_db(db, table):
+    # prints state of db.
+    # takes in database name (db), and table to print (table).
     con = lite.connect(db)
     with con:
         curs = con.cursor()
