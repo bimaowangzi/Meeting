@@ -2,39 +2,52 @@
 # Description: Main app for Meeting API, an api for a meeting scheduler.
 #              Please install requirements in requirements.txt first. (not created yet)
 
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, request
 from flask_bootstrap import Bootstrap
 import sqlite3 as lite
 
 
 app = Flask(__name__)
-#TODO: sqlite implementation, use local dict first
-
 
 @app.route('/')
 def api_root():
     #TODO: not sure if you want to show lists of everything here. if not we can just leave this.
     return render_template('index.html')
 
-@app.route('/meeting')
+@app.route('/meeting', methods = ['GET'])
 def api_meetings():
     #TODO: GET - show list of meetings.
     return 'List of meetings: ' + url_for('api_meetings')
 
-@app.route('/meeting/<m_id>')
+@app.route('/meeting/<m_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 def api_meeting(m_id):
     #TODO: GET - show details of specific meeting. PUT - edit meeting details. DELETE - remove meeting. POST - create new meeting.
-    return 'You are at meeting ' + m_id
+    if request.method == 'GET':
+        return 'GET: You are at meeting ' + m_id
+    elif request.method == 'POST':
+        return 'POST: You are at meeting ' + m_id
+    elif request.method == 'PUT':
+        return 'PUT: You are at meeting ' + m_id
+    elif request.method == 'DELETE':
+        return 'DELETE: You are at meeting ' + m_id
 
-@app.route('/person')
+
+@app.route('/person', methods = ['GET'])
 def api_persons():
     #TODO: GET - show list of persons
     return 'List of persons: ' + url_for('api_persons')
 
-@app.route('/person/<p_id>')
+@app.route('/person/<p_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 def api_person(p_id):
     #TODO: GET - show details of specific person. POST - create new person. PUT - edit person details. DELETE - delete person.
-    return 'You are at person ' + p_id
+    if request.method == 'GET':
+        return 'GET: You are at person ' + p_id
+    elif request.method == 'POST':
+        return 'POST: You are at person ' + p_id
+    elif request.method == 'PUT':
+        return 'PUT: You are at person ' + p_id
+    elif request.method == 'DELETE':
+        return 'DELETE: You are at person ' + p_id
 
 def refresh_sqlite_database(db):
     # Refreshes the sqlite database.
