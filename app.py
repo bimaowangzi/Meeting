@@ -6,6 +6,8 @@ from flask import Flask, render_template, url_for, request
 from flask_bootstrap import Bootstrap
 import sqlite3 as lite
 
+from flask import jsonify
+
 db = 'test.db'
 app = Flask(__name__)
 
@@ -26,24 +28,35 @@ def api_meetings():
 def api_meeting(m_id):
     #TODO: GET - show details of specific meeting. PUT - edit meeting details. DELETE - remove meeting. POST - create new meeting.
     if request.method == 'GET':
+        # Look up meeting m_id in Meeting
         con = lite.connect(db)
         with con:
             curs = con.cursor()
-            curs.execute("SELECT * FROM Meeting WHERE m_id={0}".format(m_id))
-            rows = curs.fetchall()
-            MeetingRow = rows[0]
-            returnText = 'GET: You are at Meeting ' + m_id + ";"
-            returnText += "Start Time: " + MeetingRow[1] + ";"
-            returnText += "End Time: " + MeetingRow[2] + ";"
-            returnText += "Location: " + MeetingRow[3]
+            try:
+                curs.execute("SELECT * FROM Meeting WHERE m_id={0}".format(m_id))
+                rows = curs.fetchall()
+                if len(rows) == 0:
+                    return not_found()
+                else:
+                    MeetingRow = rows[0]
+                    returnText = "GET: /meeting/{0}\nStart Time: {1}\nEnd Time: {2}\nLocation: {3}".format(m_id, MeetingRow[1], MeetingRow[2], MeetingRow[3])
+            except Exception as e:
+                return not_found()
+                # returnText = "An error occurred: " +  e.args[0]
         return returnText
-        return 'GET: You are at meeting ' + m_id
     elif request.method == 'POST':
         return 'POST: You are at meeting ' + m_id
     elif request.method == 'PUT':
         return 'PUT: You are at meeting ' + m_id
     elif request.method == 'DELETE':
-        return 'DELETE: You are at meeting ' + m_id
+        con = lite.connect(db)
+        with con:
+            curs = con.cursor()
+            try:
+                curs.execute("DELETE FROM Meeting WHERE m_id={0}".format(m_id))
+            except Exception as e:
+                returnText ="An error occurred: " +  e.args[0]
+        return 'You have successfully deleted meeting ' + m_id
 
 
 @app.route('/person', methods = ['GET'])
@@ -55,15 +68,22 @@ def api_persons():
 def api_person(p_id):
     #TODO: GET - show details of specific person. POST - create new person. PUT - edit person details. DELETE - delete person.
     if request.method == 'GET':
+        # Look up person p_id in Person
         con = lite.connect(db)
         with con:
             curs = con.cursor()
-            curs.execute("SELECT * FROM Person WHERE p_id={0}".format(p_id))
-            rows = curs.fetchall()
-            PersonRow = rows[0]
-            returnText = 'GET: You are at person ' + p_id + ";"
-            returnText += "Name: " + PersonRow[1] + ";"
-            returnText += "Schedule: " + PersonRow[2]
+            try:
+                curs.execute("SELECT * FROM Person WHERE p_id={0}".format(p_id))
+                rows = curs.fetchall()
+                if len(rows) == 0:
+                    return not_found()
+                    # returnText = "GET: /person/{0} NOT FOUND.".format(p_id)
+                else:
+                    PersonRow = rows[0]
+                    returnText = "GET: /person/{0}\nName: {1}\nSchedule: {2}".format(p_id, PersonRow[1], PersonRow[2])
+            except Exception as e:
+                return not_found()
+                # returnText ="GET: /person/{0} NOT FOUND {1}".format(p_id,e.args[0])
         return returnText
     elif request.method == 'POST':
         return 'POST: You are at person ' + p_id
@@ -71,6 +91,17 @@ def api_person(p_id):
         return 'PUT: You are at person ' + p_id
     elif request.method == 'DELETE':
         return 'DELETE: You are at person ' + p_id
+
+@app.errorhandler(404)
+def not_found(error=None):
+    message = {
+            'status': 404,
+            'message': 'Not Found: ' + request.url,
+    }
+    resp = jsonify(message)
+    resp.status_code = 404
+
+    return resp
 
 def refresh_sqlite_database(db):
     # Refreshes the sqlite database.
@@ -80,9 +111,9 @@ def refresh_sqlite_database(db):
         cur.execute("DROP TABLE IF EXISTS Person")
         cur.execute("DROP TABLE IF EXISTS Meeting")
         cur.execute("DROP TABLE IF EXISTS Schedules")
-        cur.execute('CREATE TABLE Person(p_id INT, name TEXT, timetable TEXT)')
-        cur.execute('CREATE TABLE Meeting(m_id INT, start_time TEXT, end_time TEXT, location TEXT)') # should we consider using a standardised format (e.g. like person's timetable?)
-        cur.execute('CREATE TABLE Schedules(m_id INT, p_id TEXT)')
+        cur.execute('CREATE TABLE Person(p_id INT PRIMARY KEY, name TEXT, timetable TEXT)')
+        cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)') # should we consider using a standardised format (e.g. like person's timetable?)
+        cur.execute('CREATE TABLE Schedules(m_id INT, p_id TEXT, PRIMARY KEY(m_id, p_id))')
 
 
 def insert_sample_data(db):
