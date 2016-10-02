@@ -135,9 +135,7 @@ def verify_existence_schedule(curs, m_id, p_id):
     # verifies that schedule exists, given curs (sqlite cursor) m_id.
     curs.execute("SELECT 1 FROM Schedules WHERE m_id = {0} AND p_id = {1}".format(m_id,p_id))
     if curs.fetchone():
-        if verify_existence_meeting(curs, m_id):
-            if verify_existence_person(curs, p_id):
-                return True
+        return True
     return False
 
 def verify_existence_meeting(curs, m_id):
@@ -275,6 +273,10 @@ def api_schedule():
             curs = con.cursor()
             try:
                 if verify_existence_schedule(curs, request.args['m_id'], request.args['p_id']):  # if it exists, this is a conflict
+                    return conflict()
+                elif verify_existence_person(curs, request.args['p_id']) == False:  # if p_id does not exists, this is a conflict
+                    return conflict()
+                elif verify_existence_meeting(curs, request.args['m_id']) == False:  # if m_id does not exists, this is a conflict
                     return conflict()
                 else:  # we can add it
                     # TODO: check valid schedule before adding

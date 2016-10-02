@@ -30,6 +30,7 @@ r = requests.get("http://localhost:5000/schedule", auth = HTTPBasicAuth('admin',
 print(r.text)
 r = requests.delete("http://localhost:5000/schedule", auth = HTTPBasicAuth('admin','password'), params = {'m_id': '3', 'p_id': '2'})
 print(r.text)
+r = requests.post("http://localhost:5000/schedule", auth = HTTPBasicAuth('admin','password'), params = {'m_id': '10', 'p_id': '10'})
 print(r.text)
 r = requests.get("http://localhost:5000/schedule", auth = HTTPBasicAuth('admin','password'))
 print(r.text)
