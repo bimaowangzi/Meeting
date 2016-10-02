@@ -125,11 +125,17 @@ def api_meeting(m_id):
                 try:
                     curs.execute("DELETE FROM Meeting WHERE m_id={0}".format(m_id))
                 except Exception as e:
-                    returnText ="An error occurred: " +  e.args[0]
                     return not_found()
             else:
                 return not_found()
         return 'DELETE: You have successfully deleted meeting ' + m_id
+
+def verify_existence_schedule(curs, m_id, p_id):
+    # verifies that a meeting exists, given curs (sqlite cursor) m_id.
+    curs.execute("SELECT 1 FROM Schedules WHERE m_id = {0} AND p_id = {1}".format(m_id,p_id))
+    if curs.fetchone():
+        return True
+    return False
 
 def verify_existence_meeting(curs, m_id):
     # verifies that a meeting exists, given curs (sqlite cursor) m_id.
@@ -225,11 +231,58 @@ def api_person(p_id):
                 try:
                     curs.execute("DELETE FROM Person WHERE p_id={0}".format(p_id))
                 except Exception as e:
-                    returnText ="An error occurred: " +  e.args[0]
                     return not_found()
             else:
                 return not_found()
         return 'DELETE: You have successfully deleted person ' + p_id
+
+@app.route('/schedule', methods = ['GET', 'POST', 'DELETE'])
+@requires_auth
+def api_schedule():
+    con = lite.connect(db)
+    if request.method == 'GET':
+        try:
+            with con:
+                curs = con.cursor()
+                curs.execute("SELECT * FROM {0}".format("Schedules"))
+                rows = curs.fetchall()
+                ScheduleJson = {}
+                count = 0
+                for row in rows:
+                    # (m_id INT, p_id TEXT,
+                    data = {}
+                    data['m_id'] = row[0]
+                    data['p_id'] = row[1]
+                    ScheduleJson[count] = data
+                    count+=1
+                returnJson = json.dumps(ScheduleJson)
+        except Exception as e:
+            return not_found()
+        return 'GET /schedule\n' + returnJson
+    elif request.method == 'POST':
+        with con:
+            curs = con.cursor()
+            try:
+                if verify_existence_schedule(curs, request.args['m_id'], request.args['p_id']):  # if it exists, this is a conflict
+                    return conflict()
+                else:  # we can add it
+                    # TODO: check valid schedule before adding
+                    curs.execute("INSERT INTO Schedules VALUES({0}, {1})".format(request.args['m_id'],request.args['p_id']))
+                    con.commit()
+                    return "You have successfully insert person {0}\'s schedule for meeting {1}.".format(request.args['p_id'],request.args['m_id'])
+            except:
+                return not_found()
+    elif request.method == 'DELETE':
+        with con:
+            curs = con.cursor()
+            if verify_existence_schedule(curs, request.args['m_id'], request.args['p_id']): #if we verify that the person exists, try delete
+                try:
+                    curs.execute("DELETE FROM Schedules WHERE m_id={0} AND p_id={1}".format(request.args['m_id'],request.args['p_id']))
+                except Exception as e:
+                    return not_found()
+            else:
+                return not_found()
+        return "DELETE: You have successfully deleted person {0}\'s schedule for meeting {1}.".format(request.args['p_id'],request.args['m_id'])
 
 @app.errorhandler(404)
 def not_found(error=None):
@@ -263,7 +316,7 @@ def refresh_sqlite_database(db):
         cur.execute("DROP TABLE IF EXISTS Schedules")
         cur.execute('CREATE TABLE Person(p_id INT PRIMARY KEY, name TEXT, timetable TEXT)')
         cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)') # should we consider using a standardised format (e.g. like person's timetable?)
-        cur.execute('CREATE TABLE Schedules(m_id INT, p_id TEXT, PRIMARY KEY(m_id, p_id))')
+        cur.execute('CREATE TABLE Schedules(m_id INT, p_id TEXT, PRIMARY KEY(m_id, p_id), FOREIGN KEY(m_id) REFERENCES Meeting, FOREIGN KEY(p_id) REFERENCES Person)')
 
 def insert_sample_data(db):
     #inserts some sample database into the database.
@@ -271,30 +324,45 @@ def insert_sample_data(db):
     con = lite.connect(db)
     with con:
         curs = con.cursor()
+        # persons = (
+        #     (1, 'Shaun', "1300-1500, 1800-2100"),
+        #     (2, 'Junsheng', ""),
+        #     (3, 'Sam', "1000-1100"),
+        #     (4, 'Ryan', "2200-2400"),
+        #     (5, 'Hazel', "900-1800"),
+        #     (6, 'Junqi', "100-200, 400-600, 800-1000, 1400-1600"),
+        #     (7, 'Bella', "1230-2300")
+        # )
+        # meetings = (
+        #     (1, "1030", "1200", "Shauns Room"),
+        #     (2, "1400", "1600", "Canteen"),
+        # )
+        # schedules = (
+        #     (1, 1),
+        #     (1, 2),
+        #     (1, 7),
+        #     (2, 1),
+        #     (2, 2),
+        #     (2, 3),
+        #     (2, 4),
+        #     (2, 5),
+        #     (2, 6),
+        #     (2, 7)
+        # )
         persons = (
-            (1, 'Shaun', "1300-1500, 1800-2100"),
-            (2, 'Junsheng', ""),
-            (3, 'Sam', "1000-1100"),
-            (4, 'Ryan', "2200-2400"),
-            (5, 'Hazel', "900-1800"),
-            (6, 'Junqi', "100-200, 400-600, 800-1000, 1400-1600"),
-            (7, 'Bella', "1230-2300")
+            (1, 'Shaun', "1030-1200, 1400-1600"),
+            (2, 'Junsheng', "1030-1200, 1800-2100")
         )
         meetings = (
             (1, "1030", "1200", "Shauns Room"),
             (2, "1400", "1600", "Canteen"),
+            (3, "1800", "2100", "Changi City Point")
         )
         schedules = (
             (1, 1),
             (1, 2),
-            (1, 7),
             (2, 1),
-            (2, 2),
-            (2, 3),
-            (2, 4),
-            (2, 5),
-            (2, 6),
-            (2, 7)
+            (3, 2)
         )
         curs.executemany("INSERT INTO Person VALUES(?, ?, ?)", persons)
         curs.executemany("INSERT INTO Meeting VALUES(?, ?, ?, ?)", meetings)
