@@ -130,11 +130,14 @@ def api_meeting(m_id):
                 return not_found()
         return 'DELETE: You have successfully deleted meeting ' + m_id
 
+# the checking is not working ...
 def verify_existence_schedule(curs, m_id, p_id):
-    # verifies that a meeting exists, given curs (sqlite cursor) m_id.
+    # verifies that schedule exists, given curs (sqlite cursor) m_id.
     curs.execute("SELECT 1 FROM Schedules WHERE m_id = {0} AND p_id = {1}".format(m_id,p_id))
     if curs.fetchone():
-        return True
+        if verify_existence_meeting(curs, m_id):
+            if verify_existence_person(curs, p_id):
+                return True
     return False
 
 def verify_existence_meeting(curs, m_id):
@@ -151,6 +154,14 @@ def verify_existence_person(curs, p_id):
     if curs.fetchone():
         return True
     return False
+
+# incomplete, still need to work on it
+# def verify_no_conflicted_schedule(curs, m_id, p_id):
+#     # verifies that new schedule (m_id) does not conflict for person (p_id)
+#     curs.execute("SELECT 1 FROM Schedules WHERE m_id = {0} AND p_id = {1}".format(m_id,p_id))
+#     if curs.fetchone():
+#         return True
+#     return False
 
 
 @app.route('/person', methods = ['GET'])
