@@ -86,9 +86,25 @@ def api_meeting(m_id):
                 return not_found()
                 # returnText = "An error occurred: " +  e.args[0]
         return returnText
+
     elif request.method == 'POST':
-        return 'POST: You are at meeting ' + m_id
+        with con:
+            curs = con.cursor()
+            try:
+                if verify_existence_meeting(curs, m_id): #if it exists, this is a conflict
+                    return conflict()
+                else: # we can add it
+                    #TODO: check valid meeting before adding
+
+                    curs.execute("INSERT INTO Meeting VALUES({0}, '{1}', '{2}', '{3}')".format(int(m_id), request.args['start_time'], request.args['end_time'], request.args['location']))
+                    con.commit()
+                    return "POST: Successful"
+            except:
+                return not_found()
     elif request.method == 'PUT':
+        with con:
+            curs = con.cursor()
+
         return 'PUT: You are at meeting ' + m_id
     elif request.method == 'DELETE':
         with con:
@@ -163,7 +179,19 @@ def api_person(p_id):
                 # returnText ="GET: /person/{0} NOT FOUND {1}".format(p_id,e.args[0])
         return returnText
     elif request.method == 'POST':
-        return 'POST: You are at person ' + p_id
+        with con:
+            curs = con.cursor()
+            try:
+                if verify_existence_person(curs, p_id):  # if it exists, this is a conflict
+                    return conflict()
+                else:  # we can add it
+                    # TODO: check valid meeting before adding
+                    curs.execute("INSERT INTO Person VALUES({0}, '{1}', '{2}')".format(int(p_id), request.args['name'],
+                                                                                       request.args['timetable']))
+                    con.commit()
+                    return "POST: Successful"
+            except:
+                return not_found()
     elif request.method == 'PUT':
         return 'PUT: You are at person ' + p_id
     elif request.method == 'DELETE':
@@ -256,8 +284,6 @@ def get_state_of_db(db, table):
         curs = con.cursor()
         curs.execute("SELECT * FROM {0}".format(table))
         rows = curs.fetchall()
-        for row in rows:
-            print(row)
         return rows
 
 if __name__ == '__main__':
