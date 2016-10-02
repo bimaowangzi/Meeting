@@ -40,13 +40,12 @@ def requires_auth(f):
 #RESTful flask tutorial: http://blog.luisrei.com/articles/flaskrest.html
 @app.route('/')
 def api_root():
-    #TODO: not sure if you want to show lists of everything here. if not we can just leave this.
-    return render_template('index.html')
+    global db
+    return render_template('index.html', list_of_persons=get_state_of_db(db, "Person"), list_of_meetings=get_state_of_db(db, "Meeting"), list_of_schedules=get_state_of_db(db, "Schedules"))
 
 @app.route('/meeting', methods = ['GET'])
 @requires_auth
 def api_meetings():
-    # TODO: GET - show list of meetings.
     try:
         con = lite.connect(db)
         with con:
@@ -69,7 +68,7 @@ def api_meetings():
 @app.route('/meeting/<m_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 @requires_auth
 def api_meeting(m_id):
-    #TODO: GET - show details of specific meeting. PUT - edit meeting details. DELETE - remove meeting. POST - create new meeting.
+    #TODO: PUT - edit meeting details. DELETE - remove meeting.
     if request.method == 'GET':
         # Look up meeting m_id in Meeting
         con = lite.connect(db)
@@ -105,13 +104,28 @@ def api_meeting(m_id):
 @app.route('/person', methods = ['GET'])
 @requires_auth
 def api_persons():
-    #TODO: GET - show list of persons
-    return 'List of persons: ' + url_for('api_persons')
+    try:
+        con = lite.connect(db)
+        with con:
+            curs = con.cursor()
+            curs.execute("SELECT * FROM {0}".format("Person"))
+            rows = curs.fetchall()
+            personJson = {}
+            for row in rows:
+                # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
+                data = {}
+                data['name'] = row[1]
+                data['timetable'] = row[2]
+                personJson[row[0]] = data
+            returnJson = json.dumps(personJson)
+    except Exception as e:
+        return not_found()
+    return 'GET /person\n' + returnJson
 
 @app.route('/person/<p_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 @requires_auth
 def api_person(p_id):
-    #TODO: GET - show details of specific person. POST - create new person. PUT - edit person details. DELETE - delete person.
+    #TODO: POST - create new person. PUT - edit person details.
     if request.method == 'GET':
         # Look up person p_id in Person
         con = lite.connect(db)
@@ -152,6 +166,17 @@ def not_found(error=None):
     }
     resp = jsonify(message)
     resp.status_code = 404
+
+    return resp
+
+@app.errorhandler(409)
+def conflict(error=None):
+    message = {
+        'status': 409,
+        'message': 'Conflict: ' + request.url,
+    }
+    resp = jsonify(message)
+    resp.status_code = 409
 
     return resp
 
@@ -213,6 +238,7 @@ def get_state_of_db(db, table):
         rows = curs.fetchall()
         for row in rows:
             print(row)
+        return rows
 
 if __name__ == '__main__':
     refresh_sqlite_database(db)
