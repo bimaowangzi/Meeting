@@ -68,10 +68,10 @@ def api_meetings():
 @app.route('/meeting/<m_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 @requires_auth
 def api_meeting(m_id):
-    #TODO: PUT - edit meeting details. DELETE - remove meeting.
+    con = lite.connect(db)
+    #TODO: PUT - edit meeting details. POST - create meeting.
     if request.method == 'GET':
         # Look up meeting m_id in Meeting
-        con = lite.connect(db)
         with con:
             curs = con.cursor()
             try:
@@ -91,14 +91,32 @@ def api_meeting(m_id):
     elif request.method == 'PUT':
         return 'PUT: You are at meeting ' + m_id
     elif request.method == 'DELETE':
-        con = lite.connect(db)
         with con:
             curs = con.cursor()
-            try:
-                curs.execute("DELETE FROM Meeting WHERE m_id={0}".format(m_id))
-            except Exception as e:
-                returnText ="An error occurred: " +  e.args[0]
+            if (verify_existence_person(curs, m_id)): #if we verify that the person exists, try delete
+                try:
+                    curs.execute("DELETE FROM Meeting WHERE m_id={0}".format(m_id))
+                except Exception as e:
+                    returnText ="An error occurred: " +  e.args[0]
+                    return not_found()
+            else:
+                return not_found()
         return 'DELETE: You have successfully deleted meeting ' + m_id
+
+def verify_existence_meeting(curs, m_id):
+    # verifies that a meeting exists, given curs (sqlite cursor) m_id.
+    curs.execute("SELECT 1 FROM Meeting WHERE m_id = {0}".format(m_id))
+    if curs.fetchone():
+        return True
+    return False
+
+
+def verify_existence_person(curs, p_id):
+    #verifies that a person exists, given curs (sqlite cursor) and p_id.
+    curs.execute("SELECT 1 FROM Person WHERE p_id = {0}".format(p_id))
+    if curs.fetchone():
+        return True
+    return False
 
 
 @app.route('/person', methods = ['GET'])
@@ -125,10 +143,10 @@ def api_persons():
 @app.route('/person/<p_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 @requires_auth
 def api_person(p_id):
+    con = lite.connect(db)
     #TODO: POST - create new person. PUT - edit person details.
     if request.method == 'GET':
         # Look up person p_id in Person
-        con = lite.connect(db)
         with con:
             curs = con.cursor()
             try:
@@ -149,13 +167,16 @@ def api_person(p_id):
     elif request.method == 'PUT':
         return 'PUT: You are at person ' + p_id
     elif request.method == 'DELETE':
-        con = lite.connect(db)
         with con:
             curs = con.cursor()
-            try:
-                curs.execute("DELETE FROM Person WHERE p_id={0}".format(p_id))
-            except Exception as e:
-                returnText ="An error occurred: " +  e.args[0]
+            if (verify_existence_person(curs, p_id)): #if we verify that the person exists, try delete
+                try:
+                    curs.execute("DELETE FROM Person WHERE p_id={0}".format(p_id))
+                except Exception as e:
+                    returnText ="An error occurred: " +  e.args[0]
+                    return not_found()
+            else:
+                return not_found()
         return 'DELETE: You have successfully deleted person ' + p_id
 
 @app.errorhandler(404)
@@ -191,7 +212,6 @@ def refresh_sqlite_database(db):
         cur.execute('CREATE TABLE Person(p_id INT PRIMARY KEY, name TEXT, timetable TEXT)')
         cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)') # should we consider using a standardised format (e.g. like person's timetable?)
         cur.execute('CREATE TABLE Schedules(m_id INT, p_id TEXT, PRIMARY KEY(m_id, p_id))')
-
 
 def insert_sample_data(db):
     #inserts some sample database into the database.
