@@ -6,7 +6,7 @@ from flask import Flask, render_template, url_for, request
 from flask_bootstrap import Bootstrap
 import sqlite3 as lite
 
-
+db = 'test.db'
 app = Flask(__name__)
 
 #TODO: add user authentication for something
@@ -26,6 +26,17 @@ def api_meetings():
 def api_meeting(m_id):
     #TODO: GET - show details of specific meeting. PUT - edit meeting details. DELETE - remove meeting. POST - create new meeting.
     if request.method == 'GET':
+        con = lite.connect(db)
+        with con:
+            curs = con.cursor()
+            curs.execute("SELECT * FROM Meeting WHERE m_id={0}".format(m_id))
+            rows = curs.fetchall()
+            MeetingRow = rows[0]
+            returnText = 'GET: You are at Meeting ' + m_id + ";"
+            returnText += "Start Time: " + MeetingRow[1] + ";"
+            returnText += "End Time: " + MeetingRow[2] + ";"
+            returnText += "Location: " + MeetingRow[3]
+        return returnText
         return 'GET: You are at meeting ' + m_id
     elif request.method == 'POST':
         return 'POST: You are at meeting ' + m_id
@@ -44,7 +55,16 @@ def api_persons():
 def api_person(p_id):
     #TODO: GET - show details of specific person. POST - create new person. PUT - edit person details. DELETE - delete person.
     if request.method == 'GET':
-        return 'GET: You are at person ' + p_id
+        con = lite.connect(db)
+        with con:
+            curs = con.cursor()
+            curs.execute("SELECT * FROM Person WHERE p_id={0}".format(p_id))
+            rows = curs.fetchall()
+            PersonRow = rows[0]
+            returnText = 'GET: You are at person ' + p_id + ";"
+            returnText += "Name: " + PersonRow[1] + ";"
+            returnText += "Schedule: " + PersonRow[2]
+        return returnText
     elif request.method == 'POST':
         return 'POST: You are at person ' + p_id
     elif request.method == 'PUT':
@@ -82,6 +102,7 @@ def insert_sample_data(db):
         )
         meetings = (
             (1, "1030", "1200", "Shauns Room"),
+            (2, "1400", "1600", "Canteen"),
         )
         schedules = (
             (1, 1),
@@ -103,11 +124,10 @@ def get_state_of_db(db, table):
         for row in rows:
             print(row)
 
-
 if __name__ == '__main__':
-    refresh_sqlite_database('test.db')
-    insert_sample_data('test.db')
-    get_state_of_db('test.db', "Person")
+    refresh_sqlite_database(db)
+    insert_sample_data(db)
+    get_state_of_db(db, "Person")
     Bootstrap(app)
     app.secret_key = 'devkey'
     app.config['SESSION_TYPE'] = 'filesystem'
