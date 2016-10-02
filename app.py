@@ -6,6 +6,7 @@ from flask import Flask, render_template, url_for, request
 from flask_bootstrap import Bootstrap
 import sqlite3 as lite
 
+from flask import json
 from flask import jsonify
 
 db = 'test.db'
@@ -21,8 +22,25 @@ def api_root():
 
 @app.route('/meeting', methods = ['GET'])
 def api_meetings():
-    #TODO: GET - show list of meetings.
-    return 'List of meetings: ' + url_for('api_meetings')
+    # TODO: GET - show list of meetings.
+    try:
+        con = lite.connect(db)
+        with con:
+            curs = con.cursor()
+            curs.execute("SELECT * FROM {0}".format("Meeting"))
+            rows = curs.fetchall()
+            meetingJson = {}
+            for row in rows:
+                # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
+                data = {}
+                data['start_time'] = row[1]
+                data['end_time'] = row[2]
+                data['location'] = row[3]
+                meetingJson[row[0]] = data
+            returnJson = json.dumps(meetingJson)
+    except Exception as e:
+        return not_found()
+    return 'GET /meeting\n' + returnJson
 
 @app.route('/meeting/<m_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 def api_meeting(m_id):
@@ -56,7 +74,7 @@ def api_meeting(m_id):
                 curs.execute("DELETE FROM Meeting WHERE m_id={0}".format(m_id))
             except Exception as e:
                 returnText ="An error occurred: " +  e.args[0]
-        return 'You have successfully deleted meeting ' + m_id
+        return 'DELETE: You have successfully deleted meeting ' + m_id
 
 
 @app.route('/person', methods = ['GET'])
@@ -90,7 +108,14 @@ def api_person(p_id):
     elif request.method == 'PUT':
         return 'PUT: You are at person ' + p_id
     elif request.method == 'DELETE':
-        return 'DELETE: You are at person ' + p_id
+        con = lite.connect(db)
+        with con:
+            curs = con.cursor()
+            try:
+                curs.execute("DELETE FROM Person WHERE p_id={0}".format(p_id))
+            except Exception as e:
+                returnText ="An error occurred: " +  e.args[0]
+        return 'DELETE: You have successfully deleted person ' + p_id
 
 @app.errorhandler(404)
 def not_found(error=None):
@@ -138,7 +163,14 @@ def insert_sample_data(db):
         schedules = (
             (1, 1),
             (1, 2),
-            (1, 7)
+            (1, 7),
+            (2, 1),
+            (2, 2),
+            (2, 3),
+            (2, 4),
+            (2, 5),
+            (2, 6),
+            (2, 7)
         )
         curs.executemany("INSERT INTO Person VALUES(?, ?, ?)", persons)
         curs.executemany("INSERT INTO Meeting VALUES(?, ?, ?, ?)", meetings)
