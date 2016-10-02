@@ -18,17 +18,19 @@ from requests.auth import HTTPBasicAuth
 # then: requests.put(<url>, params = payload)
 # see more at http://www.python-requests.org/en/latest/user/quickstart/
 
-r = requests.put("http://localhost:5000/meeting/1337", auth = HTTPBasicAuth('admin','password'))
-print(r.text)
+
 r = requests.post("http://localhost:5000/meeting/1337", auth = HTTPBasicAuth('admin','password'), params = {'start_time': '1300', 'end_time': '1900', 'location': "toilet"})
+print(r.text)
+r = requests.put("http://localhost:5000/meeting/1337", auth = HTTPBasicAuth('admin','password'), params = {'start_time': '1300', 'end_time': '2000', 'location': "Junshengs Room"})
 print(r.text)
 r = requests.get("http://localhost:5000/meeting/1337", auth = HTTPBasicAuth('admin','password'))
 print(r.text)
 # r = requests.delete("http://localhost:5000/meeting/1337", auth = HTTPBasicAuth('admin','password'))
 # print(r.text)
-r = requests.put("http://localhost:5000/person/1337", auth = HTTPBasicAuth('admin','password'))
-print(r.text)
+
 r = requests.post("http://localhost:5000/person/1337", auth = HTTPBasicAuth('admin','password'), params = {'name': 'cool dude', 'timetable': '1000-1900'})
+print(r.text)
+r = requests.put("http://localhost:5000/person/1337", auth = HTTPBasicAuth('admin','password'), params = {'name': 'Stanley', 'timetable': '1000-2100'})
 print(r.text)
 r = requests.get("http://localhost:5000/person/1337", auth = HTTPBasicAuth('admin','password'))
 print(r.text)

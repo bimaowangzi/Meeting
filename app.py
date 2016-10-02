@@ -107,8 +107,9 @@ def api_meeting(m_id):
             try:
                 if verify_existence_meeting(curs, m_id):  # if it exists, this is a conflict
                     # TODO: check valid meeting before putting
-                    curs.execute("INSERT INTO Meeting VALUES({0}, '{1}', '{2}', '{3}')".format(int(m_id), request.args[
-                        'start_time'], request.args['end_time'], request.args['location']))
+                    curs.execute("UPDATE Meeting SET start_time=? WHERE m_id=?", (request.args['start_time'], m_id))
+                    curs.execute("UPDATE Meeting SET end_time=? WHERE m_id=?", (request.args['end_time'], m_id))
+                    curs.execute("UPDATE Meeting SET location=? WHERE m_id=?", (request.args['location'], m_id))
                     con.commit()
                     return "PUT: Successful"
                 else:  # not found
@@ -209,8 +210,8 @@ def api_person(p_id):
             try:
                 if verify_existence_person(curs, p_id):   # we can put it
                     # TODO: check valid person before putting
-                    curs.execute("INSERT INTO Person VALUES({0}, '{1}', '{2}')".format(int(p_id), request.args['name'],
-                                                                                       request.args['timetable']))
+                    curs.execute("UPDATE Person SET name=? WHERE p_id=?", (request.args['name'],p_id))
+                    curs.execute("UPDATE Person SET timetable=? WHERE p_id=?", (request.args['timetable'],p_id))
                     con.commit()
                     return "PUT: Successful"
                 else:
