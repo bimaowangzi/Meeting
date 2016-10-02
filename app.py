@@ -5,14 +5,37 @@
 from flask import Flask, render_template, url_for, request
 from flask_bootstrap import Bootstrap
 import sqlite3 as lite
-
+from functools import wraps
 from flask import json
 from flask import jsonify
 
 db = 'test.db'
 app = Flask(__name__)
 
-#TODO: add user authentication for something
+def check_auth(username, password):
+    return username == 'admin' and password == 'password'
+
+def authenticate():
+    message = {'message': "Authenticate."}
+    resp = jsonify(message)
+
+    resp.status_code = 401
+    resp.headers['WWW-Authenticate'] = 'Basic realm="Example"'
+
+    return resp
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth:
+            return authenticate()
+
+        elif not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+
+    return decorated
 
 #RESTful flask tutorial: http://blog.luisrei.com/articles/flaskrest.html
 @app.route('/')
@@ -21,6 +44,7 @@ def api_root():
     return render_template('index.html')
 
 @app.route('/meeting', methods = ['GET'])
+@requires_auth
 def api_meetings():
     # TODO: GET - show list of meetings.
     try:
@@ -43,6 +67,7 @@ def api_meetings():
     return 'GET /meeting\n' + returnJson
 
 @app.route('/meeting/<m_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
+@requires_auth
 def api_meeting(m_id):
     #TODO: GET - show details of specific meeting. PUT - edit meeting details. DELETE - remove meeting. POST - create new meeting.
     if request.method == 'GET':
@@ -78,11 +103,13 @@ def api_meeting(m_id):
 
 
 @app.route('/person', methods = ['GET'])
+@requires_auth
 def api_persons():
     #TODO: GET - show list of persons
     return 'List of persons: ' + url_for('api_persons')
 
 @app.route('/person/<p_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
+@requires_auth
 def api_person(p_id):
     #TODO: GET - show details of specific person. POST - create new person. PUT - edit person details. DELETE - delete person.
     if request.method == 'GET':
@@ -190,7 +217,7 @@ def get_state_of_db(db, table):
 if __name__ == '__main__':
     refresh_sqlite_database(db)
     insert_sample_data(db)
-    get_state_of_db(db, "Person")
+    #get_state_of_db(db, "Person")
     Bootstrap(app)
     app.secret_key = 'devkey'
     app.config['SESSION_TYPE'] = 'filesystem'
