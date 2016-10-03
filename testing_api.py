@@ -44,6 +44,13 @@ print(r.text)
 r = requests.get("http://localhost:5000/person", auth = HTTPBasicAuth('admin','password'))
 print(r.text)
 
+r = requests.get("http://localhost:5000/meeting", auth = HTTPBasicAuth('admin','password'), headers={"content-type":"text"})
+print(r.text)
+r = requests.get("http://localhost:5000/meeting", auth = HTTPBasicAuth('admin','password'), headers={"content-type":"application/json"})
+print(r.text)
+r = requests.get("http://localhost:5000/meeting", auth = HTTPBasicAuth('admin','password'))
+print(r.text)
+
 # r = requests.post("http://localhost:5000/meeting/1337", auth = HTTPBasicAuth('admin','password'), params = {'start_time': '1300', 'end_time': '1900', 'location': "toilet"})
 # print(r.text)
 # r = requests.get("http://localhost:5000/meeting/1337", auth = HTTPBasicAuth('admin','password'))

@@ -45,32 +45,7 @@ def api_root():
 
 @app.route('/meeting', methods = ['GET'])
 def api_meetings():
-    try:
-        con = lite.connect(db)
-        with con:
-            curs = con.cursor()
-            curs.execute("SELECT * FROM {0}".format("Meeting"))
-            rows = curs.fetchall()
-            if (request.headers["content-type"] == "application/json"):
-                meetingJson = {}
-                for row in rows:
-                    # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
-                    data = {}
-                    data['start_time'] = row[1]
-                    data['end_time'] = row[2]
-                    data['location'] = row[3]
-                    meetingJson[row[0]] = data
-                return 'GET /meeting\n' + json.dumps(meetingJson)
-            else:
-                returnText = 'GET /meeting\n\n'
-                for row in rows:
-                    # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
-                    meeting = "Start Time: {0}\nEnd Time: {1}\nLocation: {2}\n\n".format(row[1],row[2],row[3])
-                    returnText += meeting
-                return returnText
-    except Exception as e:
-        return e.args[0]
-        # return not_found()
+    return GET_Meetings()
 
 @app.route('/meeting/<m_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 @requires_auth
@@ -160,17 +135,35 @@ def verify_existence_person(curs, p_id):
         return True
     return False
 
-# incomplete, still need to work on it
-# def verify_no_conflicted_schedule(curs, m_id, p_id):
-#     # verifies that new schedule (m_id) does not conflict for person (p_id)
-#     curs.execute("SELECT 1 FROM Schedules WHERE m_id = {0} AND p_id = {1}".format(m_id,p_id))
-#     if curs.fetchone():
-#         return True
-#     return False
+def GET_Meetings():
+    try:
+        con = lite.connect(db)
+        with con:
+            curs = con.cursor()
+            curs.execute("SELECT * FROM {0}".format("Meeting"))
+            rows = curs.fetchall()
+            if (request.headers["content-type"] == "application/json"):
+                meetingJson = {}
+                for row in rows:
+                    # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
+                    data = {}
+                    data['start_time'] = row[1]
+                    data['end_time'] = row[2]
+                    data['location'] = row[3]
+                    meetingJson[row[0]] = data
+                return 'GET /meeting\n' + json.dumps(meetingJson)
+            else:
+                returnText = 'GET /meeting\n\n'
+                for row in rows:
+                    # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
+                    meeting = "Start Time: {0}\nEnd Time: {1}\nLocation: {2}\n\n".format(row[1],row[2],row[3])
+                    returnText += meeting
+                return returnText
+    except Exception as e:
+        return e.args[0]
+        # return not_found()
 
-
-@app.route('/person', methods = ['GET'])
-def api_persons():
+def GET_Persons():
     try:
         con = lite.connect(db)
         with con:
@@ -195,6 +188,10 @@ def api_persons():
                 return returnText
     except Exception as e:
         return not_found()
+
+@app.route('/person', methods = ['GET'])
+def api_persons():
+    return GET_Persons()
 
 @app.route('/person/<p_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 @requires_auth
