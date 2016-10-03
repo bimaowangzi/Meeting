@@ -44,7 +44,6 @@ def api_root():
     return render_template('index.html', list_of_persons=get_state_of_db(db, "Person"), list_of_meetings=get_state_of_db(db, "Meeting"), list_of_schedules=get_state_of_db(db, "Schedules"))
 
 @app.route('/meeting', methods = ['GET'])
-@requires_auth
 def api_meetings():
     try:
         con = lite.connect(db)
@@ -52,18 +51,26 @@ def api_meetings():
             curs = con.cursor()
             curs.execute("SELECT * FROM {0}".format("Meeting"))
             rows = curs.fetchall()
-            meetingJson = {}
-            for row in rows:
-                # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
-                data = {}
-                data['start_time'] = row[1]
-                data['end_time'] = row[2]
-                data['location'] = row[3]
-                meetingJson[row[0]] = data
-            returnJson = json.dumps(meetingJson)
+            if (request.headers["content-type"] == "application/json"):
+                meetingJson = {}
+                for row in rows:
+                    # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
+                    data = {}
+                    data['start_time'] = row[1]
+                    data['end_time'] = row[2]
+                    data['location'] = row[3]
+                    meetingJson[row[0]] = data
+                return 'GET /meeting\n' + json.dumps(meetingJson)
+            else:
+                returnText = 'GET /meeting\n\n'
+                for row in rows:
+                    # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
+                    meeting = "Start Time: {0}\nEnd Time: {1}\nLocation: {2}\n\n".format(row[1],row[2],row[3])
+                    returnText += meeting
+                return returnText
     except Exception as e:
-        return not_found()
-    return 'GET /meeting\n' + returnJson
+        return e.args[0]
+        # return not_found()
 
 @app.route('/meeting/<m_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 @requires_auth
@@ -163,7 +170,6 @@ def verify_existence_person(curs, p_id):
 
 
 @app.route('/person', methods = ['GET'])
-@requires_auth
 def api_persons():
     try:
         con = lite.connect(db)
@@ -171,17 +177,24 @@ def api_persons():
             curs = con.cursor()
             curs.execute("SELECT * FROM {0}".format("Person"))
             rows = curs.fetchall()
-            personJson = {}
-            for row in rows:
-                # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
-                data = {}
-                data['name'] = row[1]
-                data['timetable'] = row[2]
-                personJson[row[0]] = data
-            returnJson = json.dumps(personJson)
+            if (request.headers["content-type"] == "application/json"):
+                personJson = {}
+                for row in rows:
+                    # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
+                    data = {}
+                    data['name'] = row[1]
+                    data['timetable'] = row[2]
+                    personJson[row[0]] = data
+                return 'GET /person\n' + json.dumps(personJson)
+            else:
+                returnText = 'GET /person\n\n'
+                for row in rows:
+                    # cur.execute('CREATE TABLE Meeting(m_id INT PRIMARY KEY, start_time TEXT, end_time TEXT, location TEXT)')
+                    person = "Name: {0}\nTimetable: {1}\n\n".format(row[1],row[2])
+                    returnText += person
+                return returnText
     except Exception as e:
         return not_found()
-    return 'GET /person\n' + returnJson
 
 @app.route('/person/<p_id>', methods = ['GET', 'PUT', 'DELETE', 'POST'])
 @requires_auth
