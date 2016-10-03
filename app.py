@@ -292,8 +292,9 @@ def api_schedule():
                     # fetch timetable of person
                     curs.execute("SELECT timetable FROM Person WHERE p_id={0}".format(request.args['p_id']))
                     personrows = curs.fetchone()[0]
+                    split_persons = personrows.split(", ")
                     # do a comparison
-                    for busy_period in personrows.split(","):
+                    for busy_period in split_persons:
                         start_time_busy, end_time_busy = busy_period.strip().split("-")
                         if start_time_busy<meetingrows[0] and end_time_busy>meetingrows[0]: #if meeting starts within a busy time,
                             return conflict("Meeting starts within busy time {0}".format(busy_period))
@@ -302,18 +303,38 @@ def api_schedule():
                         elif start_time_busy>meetingrows[0] and end_time_busy<meetingrows[1]: #elif meeting encapsulates a busy time,
                             return conflict("Meeting encapsultates a busy time {0}".format(busy_period))
                     curs.execute("INSERT INTO Schedules VALUES({0}, {1})".format(request.args['m_id'],request.args['p_id']))
+                    split_persons.append("{0}-{1}".format(meetingrows[0],meetingrows[1]))
+                    split_persons.sort()
+                    con.execute("UPDATE Person SET timetable=? WHERE p_id=?", (str(split_persons), request.args['p_id']))
                     con.commit()
                     return "You have successfully insert person {0}\'s schedule for meeting {1}.".format(request.args['p_id'],request.args['m_id'])
-            except:
-                return not_found("Something went wrong while POSTing.")
+            except Exception as e:
+                return not_found("Something went wrong while POSTing. "+e.args[0])
     elif request.method == 'DELETE':
         with con:
             curs = con.cursor()
             if verify_existence_schedule(curs, request.args['m_id'], request.args['p_id']): #if we verify that the person exists, try delete
                 try:
                     curs.execute("DELETE FROM Schedules WHERE m_id={0} AND p_id={1}".format(request.args['m_id'],request.args['p_id']))
+                    curs.execute("SELECT start_time, end_time FROM Meeting WHERE m_id={0}".format(request.args['m_id']))
+                    meetingrows = curs.fetchone()
+                    start_time, end_time = meetingrows
+                    curs.execute("SELECT timetable FROM Person WHERE p_id={0}".format(request.args['p_id']))
+                    personrows = curs.fetchone()[0]
+                    split_persons = personrows[1:-1].split(", ")
+                    for time in split_persons:
+                        if start_time in time:
+                            if end_time in time:
+                                split_persons.remove(time)
+                    timetable_string = ""
+                    for element in split_persons:
+                        timetable_string+=element[1:-1]+", "
+                    con.execute("UPDATE Person SET timetable=? WHERE p_id=?", (timetable_string[:-2], request.args['p_id']))
+                    con.commit()
+                    return "Successful deletion of schedule {0}".format(time)
+
                 except Exception as e:
-                    return not_found("Something went wrong when deleting that.")
+                    return not_found("Something went wrong when deleting that. "+e.args[0])
             else:
                 return not_found("Can't find a person with that m_id.")
         return "DELETE: You have successfully deleted person {0}\'s schedule for meeting {1}.".format(request.args['p_id'],request.args['m_id'])
@@ -403,7 +424,7 @@ def insert_sample_data(db):
             (1, "1030", "1200", "Shauns Room"),
             (2, "1400", "1600", "Canteen"),
             (3, "1800", "2100", "Changi City Point"),
-            (4, "1000", "1300", "Conflict Room")
+            (4, "0800", "1000", "Conflict Room")
         )
         schedules = (
             (1, 1),
