@@ -60,12 +60,12 @@ def api_meeting(m_id):
                 curs.execute("SELECT * FROM Meeting WHERE m_id={0}".format(m_id))
                 rows = curs.fetchall()
                 if len(rows) == 0:
-                    return not_found()
+                    return not_found("This m_id does not exist.")
                 else:
                     MeetingRow = rows[0]
                     returnText = "GET: /meeting/{0}\nStart Time: {1}\nEnd Time: {2}\nLocation: {3}".format(m_id, MeetingRow[1], MeetingRow[2], MeetingRow[3])
             except Exception as e:
-                return not_found()
+                return not_found("Something went wrong during GET.")
                 # returnText = "An error occurred: " +  e.args[0]
         return returnText
 
@@ -74,7 +74,7 @@ def api_meeting(m_id):
             curs = con.cursor()
             try:
                 if verify_existence_meeting(curs, m_id): #if it exists, this is a conflict
-                    return conflict()
+                    return conflict("This m_id already exists. Use PUT to create new meeting.")
                 else: # we can add it
                     #TODO: check valid meeting before adding
 
@@ -82,7 +82,7 @@ def api_meeting(m_id):
                     con.commit()
                     return "POST: Successful"
             except:
-                return not_found()
+                return not_found("Something went wrong during POST.")
     elif request.method == 'PUT':
         with con:
             curs = con.cursor()
@@ -95,21 +95,21 @@ def api_meeting(m_id):
                     con.commit()
                     return "PUT: Successful"
                 else:  # not found
-                    return not_found()
+                    return not_found("This m_id does not exist.")
 
             except:
-                return not_found()
+                return not_found("Something went wrong during PUT.")
 
     elif request.method == 'DELETE':
         with con:
             curs = con.cursor()
-            if (verify_existence_person(curs, m_id)): #if we verify that the person exists, try delete
+            if (verify_existence_meeting(curs, m_id)): #if we verify that the person exists, try delete
                 try:
                     curs.execute("DELETE FROM Meeting WHERE m_id={0}".format(m_id))
                 except Exception as e:
-                    return not_found()
+                    return not_found("Something went wrong during DELETE.")
             else:
-                return not_found()
+                return not_found("This m_id does not exist.")
         return 'DELETE: You have successfully deleted meeting ' + m_id
 
 # the checking is not working ...
@@ -206,13 +206,13 @@ def api_person(p_id):
                 curs.execute("SELECT * FROM Person WHERE p_id={0}".format(p_id))
                 rows = curs.fetchall()
                 if len(rows) == 0:
-                    return not_found()
+                    return not_found("This p_id is not found.")
                     # returnText = "GET: /person/{0} NOT FOUND.".format(p_id)
                 else:
                     PersonRow = rows[0]
                     returnText = "GET: /person/{0}\nName: {1}\nSchedule: {2}".format(p_id, PersonRow[1], PersonRow[2])
             except Exception as e:
-                return not_found()
+                return not_found("Something went wrong during GET.")
                 # returnText ="GET: /person/{0} NOT FOUND {1}".format(p_id,e.args[0])
         return returnText
     elif request.method == 'POST':
@@ -220,29 +220,25 @@ def api_person(p_id):
             curs = con.cursor()
             try:
                 if verify_existence_person(curs, p_id):  # if it exists, this is a conflict
-                    return conflict()
+                    return conflict("This p_id already exists.")
                 else:  # we can add it
-                    # TODO: check valid person before adding
-                    curs.execute("INSERT INTO Person VALUES({0}, '{1}', '{2}')".format(int(p_id), request.args['name'],
-                                                                                       request.args['timetable']))
+                    curs.execute("INSERT INTO Person VALUES({0}, '{1}', '""')".format(int(p_id), request.args['name']))
                     con.commit()
-                    return "POST: Successful"
+                    return "POST /person/: Successful"
             except:
-                return not_found()
+                return not_found("Something went wrong during POST.")
     elif request.method == 'PUT':
         with con:
             curs = con.cursor()
             try:
                 if verify_existence_person(curs, p_id):   # we can put it
-                    # TODO: check valid person before putting
                     curs.execute("UPDATE Person SET name=? WHERE p_id=?", (request.args['name'],p_id))
-                    curs.execute("UPDATE Person SET timetable=? WHERE p_id=?", (request.args['timetable'],p_id))
                     con.commit()
-                    return "PUT: Successful"
+                    return "PUT /person/: Successful"
                 else:
-                    return not_found()
+                    return not_found("This person doesn't exist. Use POST to create a new one.")
             except:
-                return not_found()
+                return not_found("Something went wrong during PUT.")
     elif request.method == 'DELETE':
         with con:
             curs = con.cursor()
@@ -250,9 +246,9 @@ def api_person(p_id):
                 try:
                     curs.execute("DELETE FROM Person WHERE p_id={0}".format(p_id))
                 except Exception as e:
-                    return not_found()
+                    return not_found("Something went wrong in deleting.")
             else:
-                return not_found()
+                return not_found("This p_id does not exist.")
         return 'DELETE: You have successfully deleted person ' + p_id
 
 @app.route('/schedule', methods = ['GET', 'POST', 'DELETE'])
@@ -276,25 +272,40 @@ def api_schedule():
                     count+=1
                 returnJson = json.dumps(ScheduleJson)
         except Exception as e:
-            return not_found()
+            return not_found("Something went wrong with GET.")
         return 'GET /schedule\n' + returnJson
     elif request.method == 'POST':
         with con:
             curs = con.cursor()
             try:
                 if verify_existence_schedule(curs, request.args['m_id'], request.args['p_id']):  # if it exists, this is a conflict
-                    return conflict()
+                    return conflict("This meeting already exists.")
                 elif verify_existence_person(curs, request.args['p_id']) == False:  # if p_id does not exists, this is a conflict
-                    return conflict()
+                    return conflict("This p_id does not exist.")
                 elif verify_existence_meeting(curs, request.args['m_id']) == False:  # if m_id does not exists, this is a conflict
-                    return conflict()
+                    return conflict("This m_id does not exist.")
                 else:  # we can add it
                     # TODO: check valid schedule before adding
+                    # fetch the meeting time
+                    curs.execute("SELECT start_time, end_time FROM Meeting WHERE m_id={0}".format(request.args['m_id']))
+                    meetingrows= curs.fetchone()
+                    # fetch timetable of person
+                    curs.execute("SELECT timetable FROM Person WHERE p_id={0}".format(request.args['p_id']))
+                    personrows = curs.fetchone()[0]
+                    # do a comparison
+                    for busy_period in personrows.split(","):
+                        start_time_busy, end_time_busy = busy_period.strip().split("-")
+                        if start_time_busy<meetingrows[0] and end_time_busy>meetingrows[0]: #if meeting starts within a busy time,
+                            return conflict("Meeting starts within busy time {0}".format(busy_period))
+                        elif start_time_busy<meetingrows[1] and end_time_busy>meetingrows[1]: #elif meeting ends within a busy time,
+                            return conflict("Meeting ends within busy time {0}".format(busy_period))
+                        elif start_time_busy>meetingrows[0] and end_time_busy<meetingrows[1]: #elif meeting encapsulates a busy time,
+                            return conflict("Meeting encapsultates a busy time {0}".format(busy_period))
                     curs.execute("INSERT INTO Schedules VALUES({0}, {1})".format(request.args['m_id'],request.args['p_id']))
                     con.commit()
                     return "You have successfully insert person {0}\'s schedule for meeting {1}.".format(request.args['p_id'],request.args['m_id'])
             except:
-                return not_found()
+                return not_found("Something went wrong while POSTing.")
     elif request.method == 'DELETE':
         with con:
             curs = con.cursor()
@@ -302,17 +313,23 @@ def api_schedule():
                 try:
                     curs.execute("DELETE FROM Schedules WHERE m_id={0} AND p_id={1}".format(request.args['m_id'],request.args['p_id']))
                 except Exception as e:
-                    return not_found()
+                    return not_found("Something went wrong when deleting that.")
             else:
-                return not_found()
+                return not_found("Can't find a person with that m_id.")
         return "DELETE: You have successfully deleted person {0}\'s schedule for meeting {1}.".format(request.args['p_id'],request.args['m_id'])
 
 @app.errorhandler(404)
 def not_found(error=None):
-    message = {
+    if error==None:
+        message = {
+                'status': 404,
+                'message': 'Not Found: ' + request.url,
+        }
+    else:
+        message = {
             'status': 404,
-            'message': 'Not Found: ' + request.url,
-    }
+            'message': 'Not Found: ' + request.url + " Error: " + error,
+        }
     resp = jsonify(message)
     resp.status_code = 404
 
@@ -320,10 +337,16 @@ def not_found(error=None):
 
 @app.errorhandler(409)
 def conflict(error=None):
-    message = {
-        'status': 409,
-        'message': 'Conflict: ' + request.url,
-    }
+    if error==None:
+        message = {
+            'status': 409,
+            'message': 'Conflict: ' + request.url,
+        }
+    else:
+        message = {
+            'status': 409,
+            'message': 'Conflict: ' + request.url +" Error: " + error,
+        }
     resp = jsonify(message)
     resp.status_code = 409
 
@@ -379,7 +402,8 @@ def insert_sample_data(db):
         meetings = (
             (1, "1030", "1200", "Shauns Room"),
             (2, "1400", "1600", "Canteen"),
-            (3, "1800", "2100", "Changi City Point")
+            (3, "1800", "2100", "Changi City Point"),
+            (4, "1000", "1300", "Conflict Room")
         )
         schedules = (
             (1, 1),
