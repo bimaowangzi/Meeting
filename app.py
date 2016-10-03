@@ -391,31 +391,6 @@ def insert_sample_data(db):
     con = lite.connect(db)
     with con:
         curs = con.cursor()
-        # persons = (
-        #     (1, 'Shaun', "1300-1500, 1800-2100"),
-        #     (2, 'Junsheng', ""),
-        #     (3, 'Sam', "1000-1100"),
-        #     (4, 'Ryan', "2200-2400"),
-        #     (5, 'Hazel', "900-1800"),
-        #     (6, 'Junqi', "100-200, 400-600, 800-1000, 1400-1600"),
-        #     (7, 'Bella', "1230-2300")
-        # )
-        # meetings = (
-        #     (1, "1030", "1200", "Shauns Room"),
-        #     (2, "1400", "1600", "Canteen"),
-        # )
-        # schedules = (
-        #     (1, 1),
-        #     (1, 2),
-        #     (1, 7),
-        #     (2, 1),
-        #     (2, 2),
-        #     (2, 3),
-        #     (2, 4),
-        #     (2, 5),
-        #     (2, 6),
-        #     (2, 7)
-        # )
         persons = (
             (1, 'Shaun', "1030-1200, 1400-1600"),
             (2, 'Junsheng', "1030-1200, 1800-2100")
@@ -424,7 +399,9 @@ def insert_sample_data(db):
             (1, "1030", "1200", "Shauns Room"),
             (2, "1400", "1600", "Canteen"),
             (3, "1800", "2100", "Changi City Point"),
-            (4, "0800", "1000", "Conflict Room")
+            (4, "0800", "1100", "Conflict Room1"),
+            (5, "1100", "1400", "Conflict Room2"),
+            (6, "1100", "1130", "Conflict Room3")
         )
         schedules = (
             (1, 1),
