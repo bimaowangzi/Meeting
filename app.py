@@ -1,6 +1,22 @@
 # Name: app.py
 # Description: Main app for Meeting API, an api for a meeting scheduler.
-#              Please install requirements in requirements.txt first. (not created yet)
+#              Please install requirements in requirements.txt first.
+#              API is in text unless stated otherwise.
+#              / (root) - GET: HTML page of the current state of the db.
+#              /meeting - GET: Gets a list of meetings. json and text compatible.
+#              /person - GET: Gets a list of persons. json and text compatible.
+#              /meeting/m_id - GET: Gets meeting details.
+#                              POST: Adds a new meeting with m_id and details.
+#                              PUT: Updates an existing meeting m_id.
+#                              DELETE: Delete existing meeting m_id.
+#              /person/p_id - GET: Gets person details.
+#                             POST: Adds a new person with p_id and details.
+#                             PUT: Updates an existing person p_id.
+#                             DELETE: Delete existing person p_id.
+#              /schedule - GET: Gets all schedules details.
+#                          POST: Adds a new schedule with m_id, p_id. Adds meeting to Person timetable.
+#                          DELETE: Deletes an existing schedule with m_id, p_id. Removes meeting from Person timetable.
+#              For usage examples, please check out testing_api.py.
 
 from flask import Flask, render_template, url_for, request
 from flask_bootstrap import Bootstrap
@@ -76,7 +92,6 @@ def api_meeting(m_id):
                 if verify_existence_meeting(curs, m_id): #if it exists, this is a conflict
                     return conflict("This m_id already exists. Use PUT to create new meeting.")
                 else: # we can add it
-                    #TODO: check valid meeting before adding
 
                     curs.execute("INSERT INTO Meeting VALUES({0}, '{1}', '{2}', '{3}')".format(int(m_id), request.args['start_time'], request.args['end_time'], request.args['location']))
                     con.commit()
@@ -88,7 +103,6 @@ def api_meeting(m_id):
             curs = con.cursor()
             try:
                 if verify_existence_meeting(curs, m_id):  # if it exists, this is a conflict
-                    # TODO: check valid meeting before putting
                     curs.execute("UPDATE Meeting SET start_time=? WHERE m_id=?", (request.args['start_time'], m_id))
                     curs.execute("UPDATE Meeting SET end_time=? WHERE m_id=?", (request.args['end_time'], m_id))
                     curs.execute("UPDATE Meeting SET location=? WHERE m_id=?", (request.args['location'], m_id))
@@ -197,7 +211,6 @@ def api_persons():
 @requires_auth
 def api_person(p_id):
     con = lite.connect(db)
-    #TODO: POST - create new person. PUT - edit person details.
     if request.method == 'GET':
         # Look up person p_id in Person
         with con:
