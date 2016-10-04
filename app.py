@@ -1,3 +1,5 @@
+# Names of students: Lin Junsheng & Shaun Chiang
+
 # Name: app.py
 # Description: Main app for Meeting API, an api for a meeting scheduler.
 #              Please install requirements in requirements.txt first.
